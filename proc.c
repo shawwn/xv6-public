@@ -523,12 +523,27 @@ procdump(void)
       state = states[p->state];
     else
       state = "???";
-    cprintf("%d %s %s", p->pid, state, p->name);
+    cprintf("%d\t%s\t%s\t", p->pid, state, p->name);
     if(p->state == SLEEPING){
       getcallerpcs((uint*)p->context->ebp+2, pc);
       for(i=0; i<10 && pc[i] != 0; i++)
-        cprintf(" %p", pc[i]);
+        cprintf((i > 0) ? " %p" : "%p", pc[i]);
     }
     cprintf("\n");
   }
+}
+
+int
+cps(void)
+{
+  // Enable interrupts on this processor.
+  sti();
+
+  // Print out the process table.
+  acquire(&ptable.lock);
+  cprintf("PID\tSTATE\tCMD\tREGISTERS\t\n");
+  procdump();
+  release(&ptable.lock);
+
+  return 0;
 }
