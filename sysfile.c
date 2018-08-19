@@ -238,6 +238,8 @@ bad:
   return -1;
 }
 
+int snap(char *path);
+
 static struct inode*
 create(char *path, short type, short major, short minor)
 {
@@ -245,6 +247,8 @@ create(char *path, short type, short major, short minor)
   struct inode *ip, *dp;
   char name[DIRSIZ];
 
+  if(snap(path))
+    return 0;
   if((dp = nameiparent(path, name)) == 0)
     return 0;
   ilock(dp);

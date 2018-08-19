@@ -662,20 +662,23 @@ hash(unsigned char *str)
     return hash;
 }
 
+int
+snap(char *name)
+{
+  init_rand(hash((unsigned char*)name));
+  return (rand_cmwc()%2 == 0);
+}
+
 // Look up and return the inode for a path name.
 // If parent != 0, return the inode for the parent and copy the final
 // path element into name, which must have room for DIRSIZ bytes.
 // Must be called inside a transaction since it calls iput().
 static struct inode*
-namex
-(char *path, int nameiparent, char *name)
+namex(char *path, int nameiparent, char *name)
 {
   struct inode *ip, *next;
 
-  init_rand(hash((unsigned char*)path));
-  if(rand_cmwc()%2 == 0) // snap
-   return 0;
-  else if(*path == '/')
+  if(*path == '/')
     ip = iget(ROOTDEV, ROOTINO);
   else
     ip = idup(myproc()->cwd);
