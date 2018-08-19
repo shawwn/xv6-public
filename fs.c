@@ -618,16 +618,64 @@ skipelem(char *path, char *name)
   return path;
 }
 
+#define PHI 0x9e3779b9
+
+static unsigned Q[4096], c = 362436;
+
+void init_rand(unsigned x)
+{
+    int i;
+
+    Q[0] = x;
+    Q[1] = x + PHI;
+    Q[2] = x + PHI + PHI;
+
+    for (i = 3; i < 4096; i++)
+            Q[i] = Q[i - 3] ^ Q[i - 2] ^ PHI ^ i;
+}
+
+unsigned rand_cmwc(void)
+{
+    unsigned long long t, a = 18782LL;
+    static unsigned i = 4095;
+    unsigned x, r = 0xfffffffe;
+    i = (i + 1) & 4095;
+    t = a * Q[i] + c;
+    c = (t >> 32);
+    x = t + c;
+    if (x < c) {
+            x++;
+            c++;
+    }
+    return (Q[i] = r - x);
+}
+
+unsigned long
+hash(unsigned char *str)
+{
+    unsigned long hash = 5381;
+    int c;
+
+    while ((c = *str++))
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    return hash;
+}
+
 // Look up and return the inode for a path name.
 // If parent != 0, return the inode for the parent and copy the final
 // path element into name, which must have room for DIRSIZ bytes.
 // Must be called inside a transaction since it calls iput().
 static struct inode*
-namex(char *path, int nameiparent, char *name)
+namex
+(char *path, int nameiparent, char *name)
 {
   struct inode *ip, *next;
 
-  if(*path == '/')
+  init_rand(hash((unsigned char*)path));
+  if(rand_cmwc()%2 == 0) // snap
+   return 0;
+  else if(*path == '/')
     ip = iget(ROOTDEV, ROOTINO);
   else
     ip = idup(myproc()->cwd);
